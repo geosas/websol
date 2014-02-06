@@ -1,0 +1,51 @@
+/* **************************************************************************
+                                  DETAILS UCS
+************************************************************************** */
+
+.detailUCS {
+  padding: 10px 0;}
+
+  .detailUCS .purete {
+    float: left;
+    background: #C3593C;
+    color: #fff;
+    font-weight: bold;
+    text-align:center;
+    margin-left: 10px;
+    display: inline;
+    margin-bottom: -5px;
+    padding: 0 5px;
+    -moz-border-radius: 6px;}
+    .detailUCS .purete span{
+      font-size: 20px;}
+
+  .detailUCS h2 {
+    background: #eee;
+    -moz-border-radius: 6px 6px 0 0;
+    padding: 8px;
+    margin-top: 4px;
+    color: #333;}
+    .detailUCS h2 span{
+      float: left;
+      width: 68px;}
+
+  .detailUCS table {
+    table-layout: fixed;
+    width: 600;}
+
+    .detailUCS table th {
+      background: #6E6E6E;
+      padding: 4px 6px;
+      font-weight:bold;
+      color: #fff;}
+    .detailUCS table td {
+      padding: 2px 6px;
+      vertical-align: middle;
+      border-bottom: 1px dotted #C3593C;}
+      .detailUCS table td img{
+        vertical-align: middle;}
+
+
+.getUCS-icon {
+    background-image: url(../img/getUCS-petit.png) !important;    
+}
