@@ -9,12 +9,12 @@
  */
 Ext.namespace("GEOR.Addons");
 
-GEOR.Addons.Sol = function(map, options) {
+GEOR.Addons.Websol = function(map, options) {
     this.map = map;    
     this.options = options;    
     this.item = null;    
 };
-GEOR.Addons.Sol.prototype = (function() {
+GEOR.Addons.Websol.prototype = (function() {
 
     /*
      * Private

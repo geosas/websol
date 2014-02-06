@@ -2,7 +2,7 @@
     "js": [
         "../../../lib/externals/openlayers/lib/OpenLayers/Format/OWSCommon/v1_1_0.js",
         "js/lang.js",
-        "js/AGRO_getUCS.js"
+        "js/websol.js"
     ],
     "css": ["css/sol.css"],
     "default_options": {
