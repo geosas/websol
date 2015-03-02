@@ -9,53 +9,101 @@
  */
 Ext.namespace("GEOR.Addons");
 
-GEOR.Addons.Websol = function(map, options) {
-    this.map = map;    
-    this.options = options;    
-    this.item = null;    
-};
-GEOR.Addons.Websol.prototype = (function() {
-
-    /*
-     * Private
-     */
+GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
 
     /**
      * Property: map
      * {OpenLayers.Map} The map instance.
      */
-    var map = null;
+    map: null,
+
+    /**
+     * Property: popup
+     * {GeoExt.Popoup.} Display popup window.
+     */
+    popup: null,
 
     /**
      * Property: vectorLayer
      * {OpenLayers.Layer.Vector} The vector layer on which we display results
      */
-    var vectorLayer = null;
+    vectorLayer: null,
 
     /**
      * Property: config
-     *{Object} Hash of options,. */	
-    var config = null;
-
-    /**
-     * Method: tr
-     * Translation please !
-     */
-    var tr = function (str) {
-            return OpenLayers.i18n(str);
-        };
+     *{Object} Hash of options */	
+    config: null,
 
     /**
      * Property: mask
      * {Ext.LoadMask} the catalogue's keywords panel mask
      */
-    var mask = null;
+    mask: null,
 
     /**
      * Property: cnt
-     * {Ext.LoadMask} the number of responses
+     * {var} the number of responses
      */
-    var cnt = 0 ;
+    cnt: 0, 
+
+    /**
+     * Method: tr
+     * Translation please !
+     */
+    tr: function (str) {
+        return OpenLayers.i18n(str);
+    },
+
+    /**
+     * Method: init
+     *
+     * Parameters:
+     * record - {Ext.data.record} a record with the addon parameters
+     */
+    init: function (record) {
+        var lang = OpenLayers.Lang.getCode() ;
+        mask = new Ext.LoadMask (Ext.getBody(), {
+            msg: tr("Loading...")
+        }) ;
+        map = this.map;
+        config = this.options;
+        console.log ("Liste des serveurs WEBSOL utilises : ") ; // debug infos
+        for (i=0 ; i < config.WEBSOL_SERVERS.length ; i++)	{
+             console.log ("name="+config.WEBSOL_SERVERS[i].name+" / url="+config.WEBSOL_SERVERS[i].url+" / layers="+config.WEBSOL_SERVERS[i].layers) ;
+        } 
+        this.defControlGetUCS();
+        this.clickUCS = new OpenLayers.Control.Click();
+        this.map.addControl(this.clickUCS);
+        this.vectorLayer = this.createVectorLayer () ; 
+        this.map.addLayer (this.vectorLayer) ;
+
+        if (this.target) {
+            // addon placed in toolbar
+            this.components = this.target.insertButton(this.position, {
+                xtype: 'button',
+                enableToggle: true,
+                toggleGroup: 'map',
+                tooltip: this.getTooltip(record), // method provided by GEOR.Addons.Base
+                iconCls: 'getUCS-icon',
+                listeners: {
+                    "toggle": this.onCheckchange,
+                    scope: this 
+                }
+            });
+            this.target.doLayout();
+        } else {
+            // addon placed in "tools menu"
+            this.item = new Ext.menu.CheckItem({
+                text: this.getText(record), // method provided by GEOR.Addons.Base
+                qtip: this.getQtip(record), // method provided by GEOR.Addons.Base
+                checked: false,
+                listeners: {
+                    "checkchange": this.onCheckchange,
+                    scope: this 
+                }
+            });
+        }
+    },
 
     /**
      * Method: createVectorLayer
@@ -63,7 +111,7 @@ GEOR.Addons.Websol.prototype = (function() {
      * Returns:
      * {OpenLayers.Layer.Vector}
      */
-    var createVectorLayer = function() {
+    createVectorLayer: function() {
         var defStyle = OpenLayers.Util.extend({},
             OpenLayers.Feature.Vector.style['default']);
         var selStyle = OpenLayers.Util.extend({},
@@ -86,186 +134,156 @@ GEOR.Addons.Websol.prototype = (function() {
             )
         });
         return new OpenLayers.Layer.Vector("UCSLayer", {
-            displayInLayerSwitcher: false,
+            displayInLayerSwitcher: true,
             styleMap: styleMap,
             rendererOptions: {
                 zIndexing: true
             }
         });
-    };
+    },
 
     /**
      * Method: getUCS
      * execute getUCS request on Websol server.
      *
      */
-    var getUCS = function(pt) {
-        this.cnt = 0 ;
-        this.msg = "Le point sélectionné n'appartient à aucune des régions interrogeables :<br><b>" ;
+    getUCS: function(pt) {
+        _this = this ;
+        _this.cnt = 0 ;
+        _this.msg = tr ("websol.popup.body.NOK") ;
         GEOR.waiter.show();
         mask && mask.show () ;
+        this.popup && this.popup.destroy();
+        if (this.vectorLayer) {
+            this.vectorLayer.destroyFeatures() ;
+        }
         for (i=0 ; i < config.WEBSOL_SERVERS.length ; i++)	{
             var url = config.WEBSOL_SERVERS[i].url+"?lon="+pt.x+"&lat="+pt.y+"&format="+config.format+"&layers="+config.WEBSOL_SERVERS[i].layers+"&sld="+config.sld ;
-            this.msg += "- " + config.WEBSOL_SERVERS[i].name + "<br>";
+            _this.msg += "- " + config.WEBSOL_SERVERS[i].name + "<br>";
             console.log ("url="+url) ;
             Ext.Ajax.request({
                 url: url,
                 method: 'GET',
                 success: function(response) {
                     if (response.responseText.indexOf("no_uc") == -1) {
-                        this.cnt++ ;
-                        if (this.cnt >= config.WEBSOL_SERVERS.length) { // Aucun serveur n'a retourne une unite cartographique
-                            console.log ("Aucune donnee sur le point selectionne") ;
-                            var win = new Ext.Window({
-                                title: 'Shoot Again!',
-                                autoScroll: true,
-                                initCenter : true,
-                                preventBodyReset: true,
+                        _this.cnt++ ;
+                        if (_this.cnt >= config.WEBSOL_SERVERS.length) { // Aucun serveur n'a retourne une unite cartographique
+                            _this.popup = new GeoExt.Popup({
+                                title: tr ("websol.popup.title.NOK"),
+                                location: pt,
+                                anchorPosition: "top-left",
+                                map: _this.map,
+                                collapsible: false,
+                                closable: true,
+                                unpinnable: false,
                                 buttons: [{
                                     text: tr("OK"),
                                     handler: function() {
-                                        win.close();
+                                        _this.popup.close();
                                     }
                                 }],
-                                html: this.msg
+                                html: _this.msg
                             });
                             mask && mask.hide();
-                            win.show();
+                            _this.popup.show();
                         }
                     }else{
                         var json = Ext.util.JSON.decode(response.responseText) ;
                         var geojsonFormat = new OpenLayers.Format.GeoJSON();
-                        console.log (json.type+" "+json.id) ;
                         var html = json.properties["html"];
-                        if (!vectorLayer) {
-                            vectorLayer = createVectorLayer () ; 
-                            map.addLayer(vectorLayer);
-                        }else {
-                            vectorLayer.destroyFeatures() ;
-                        }
-                        vectorLayer.addFeatures(geojsonFormat.read(json));
-                        var win = new Ext.Window({
-                            title: 'Unite Cartograpique de Sol n°'+json.id,
-                            autoScroll: true,
-                            initCenter : false,
-                            x : 50,
-                            y : 50,
-                            width: 600,
-                            height: 400,
-                            preventBodyReset: true,
-                            buttons: [{
-                                text: tr("OK"),
-                                handler: function() {
-                                    win.close();
-                                }
-                            }],
-                            html: html
-                        });
+                        _this.vectorLayer.addFeatures(geojsonFormat.read(json));
+                            console.log ("new popup x="+pt.x+" y="+pt.y) ;
+                            _this.popup = new GeoExt.Popup({
+                                title: tr ("websol.popup.title.OK")+json.id,
+                                location: pt,
+                                width: 600,
+                                height: 400,
+                                anchorPosition: "top-left",
+                                map: _this.map,
+                                autoScroll: true,
+                                closeAction: "hide",
+                                collapsible: false,
+                                closable: true,
+                                unpinnable: false,
+                                buttons: [{
+                                    text: tr("OK"),
+                                    handler: function() {
+                                        _this.popup.close();
+                                        _this.vectorLayer.destroyFeatures() ;
+                                    }
+                                }],
+                                listeners: {
+                                    "hide": function() {
+                                        _this.vectorLayer.destroyFeatures() ;
+                                    },
+                                    scope: this
+                                },
+                                html: html,
+                                scope: this
+                            });
                         mask && mask.hide();
-                        win.show();
+                        _this.popup.show();
                     }
                 }
             });
         }
-        this.msg+="</b>" ;
-    };
+    },
 
     /**
      * Method: defControlGetUCS
      * define Control 
      *
      */
-    var defControlGetUCS = function () {
-            OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
-                displayClass: 'detailUCS',
-                defaultHandlerOptions: {
-                    'single': true,
-                    'double': false,
-                    'pixelTolerance': 0,
-                    'stopSingle': false,
-                    'stopDouble': false
-                },
-                initialize: function () {
-                    this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
-                    OpenLayers.Control.prototype.initialize.apply(
-                    this, arguments);
-                    this.handler = new OpenLayers.Handler.Point(
-                    this, {
-                        'done': this.clickUCS
-                    });
-                },
-                clickUCS: function (pt) {
-                    clickUCS.deactivate();
-                    getUCS(pt);
-                }
-            });
-        };
+    defControlGetUCS: function () {
+        _this = this ;
+        OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
+            displayClass: 'detailUCS',
+            defaultHandlerOptions: {
+                'single': true,
+                'double': false,
+                'pixelTolerance': 0,
+                'stopSingle': false,
+                'stopDouble': false
+            },
+            trigger: function (pt) {
+                console.log ("clicken sie inside") ;
+                _this.getUCS(pt);
+            },
+            initialize: function () {
+                this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
+                OpenLayers.Control.prototype.initialize.apply(
+                this, arguments);
+                this.handler = new OpenLayers.Handler.Point(
+                this, {
+                    'done': this.trigger,
+                });
+            }
+        });
+    },
 
-    return {
-        /*
-         * Public
-         */
-
-
-        /**
-         * APIMethod: create
-         *
-         * APIMethod: create
-         * Return a  {Ext.menu.Item} for GEOR_addonsmenu.js and initialize this module.
-         *
-         * Parameters:
-         * addonConfig - Array of addon config objects
-         */
-
-         init: function (addonconfig) {
-            var lang = OpenLayers.Lang.getCode() ;
-            mask = new Ext.LoadMask (Ext.getBody(), {
-                msg: tr("Loading...")
-            }) ;
-            map = this.map;
-            config = this.options;
-            console.log ("Liste des serveurs WEBSOL utilises : ") ; // debug infos
-            for (i=0 ; i < config.WEBSOL_SERVERS.length ; i++)	{
-                 console.log ("name="+config.WEBSOL_SERVERS[i].name+" / url="+config.WEBSOL_SERVERS[i].url+" / layers="+config.WEBSOL_SERVERS[i].layers) ;
-            } //
-            defControlGetUCS();
-            clickUCS = new OpenLayers.Control.Click();
-            map.addControl(clickUCS);
-            drawLayer = new OpenLayers.Layer.Vector("Exutoire", {
-                displayInLayerSwitcher: false
-            });
-            map.addLayer (drawLayer) ;
-
-            var menuitems = new Ext.menu.Item({
-                text: addonconfig.get("title")[lang],
-                qtip: addonconfig.get("description")[lang],
-                iconCls: 'getUCS-icon',
-                listeners:{afterrender: function( thisMenuItem ) {
-                    Ext.QuickTips.register({
-                        target: thisMenuItem.getEl().getAttribute("id"),
-                        title: thisMenuItem.initialConfig.text
-                    });
-                }},
-                menu: new Ext.menu.Menu({
-                    items: [
-                    new Ext.menu.CheckItem (new Ext.Action ({
-                        iconCls: 'drawpoint',
-                        text: tr("sol.getucsfromclick"),
-                        map: map,
-                        toggleGroup: "map",
-                        enableToggle: true,
-                        allowDepress: true,
-                        handler: function () {
-                            clickUCS.activate();
-                        }
-                    }))]
-                })
-            });
-            this.item = menuitems;
-            return menuitems;
-        },
-        destroy: function() {        
-            this.map = null;
+    /**             
+     * Method: onCheckchange 
+     * Callback on checkbox state changed
+     */     
+    onCheckchange: function(item, checked) {
+        console.log ("onCheckchange:") ;
+        if (checked) {
+            GEOR.helper.msg("WebSol",
+                OpenLayers.i18n("websol.helper.msg")) ;
+            this.clickUCS.activate();
+        } else {
+            this.clickUCS.deactivate();
+            if (this.vectorLayer) {
+                this.vectorLayer.destroyFeatures() ;
+            }
+            this.popup.hide();
         }
+    },
+
+    destroy: function() {        
+       this.map = null;
+       this.popup = null;
+       this.vectorLayer = null;
+       GEOR.Addons.Base.prototype.destroy.call(this);
     }
-})();
+});
