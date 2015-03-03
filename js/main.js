@@ -83,24 +83,26 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
                 xtype: 'button',
                 enableToggle: true,
                 toggleGroup: 'map',
-                tooltip: this.getTooltip(record), // method provided by GEOR.Addons.Base
-                iconCls: 'getUCS-icon',
+                tooltip: this.getTooltip(record), 
+                iconCls: 'websol-icon',
                 listeners: {
                     "toggle": this.onCheckchange,
                     scope: this 
-                }
+                },
+                scope: this 
             });
             this.target.doLayout();
         } else {
             // addon placed in "tools menu"
             this.item = new Ext.menu.CheckItem({
-                text: this.getText(record), // method provided by GEOR.Addons.Base
-                qtip: this.getQtip(record), // method provided by GEOR.Addons.Base
-                checked: false,
+                text: this.getText(record), 
+                qtip: this.getQtip(record),
+                iconCls: 'websol-icon',
                 listeners: {
                     "checkchange": this.onCheckchange,
                     scope: this 
-                }
+                },
+                scope: this 
             });
         }
     },
@@ -134,7 +136,7 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
             )
         });
         return new OpenLayers.Layer.Vector("UCSLayer", {
-            displayInLayerSwitcher: true,
+            displayInLayerSwitcher: false,
             styleMap: styleMap,
             rendererOptions: {
                 zIndexing: true
@@ -148,9 +150,8 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
      *
      */
     getUCS: function(pt) {
-        _this = this ;
-        _this.cnt = 0 ;
-        _this.msg = tr ("websol.popup.body.NOK") ;
+        this.cnt = 0 ;
+        this.msg = tr ("websol.popup.body.NOK") ;
         GEOR.waiter.show();
         mask && mask.show () ;
         this.popup && this.popup.destroy();
@@ -159,72 +160,75 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
         }
         for (i=0 ; i < config.WEBSOL_SERVERS.length ; i++)	{
             var url = config.WEBSOL_SERVERS[i].url+"?lon="+pt.x+"&lat="+pt.y+"&format="+config.format+"&layers="+config.WEBSOL_SERVERS[i].layers+"&sld="+config.sld ;
-            _this.msg += "- " + config.WEBSOL_SERVERS[i].name + "<br>";
+            this.msg += "- " + config.WEBSOL_SERVERS[i].name + "<br>";
             console.log ("url="+url) ;
             Ext.Ajax.request({
                 url: url,
                 method: 'GET',
                 success: function(response) {
                     if (response.responseText.indexOf("no_uc") == -1) {
-                        _this.cnt++ ;
-                        if (_this.cnt >= config.WEBSOL_SERVERS.length) { // Aucun serveur n'a retourne une unite cartographique
-                            _this.popup = new GeoExt.Popup({
+                        this.cnt++ ;
+                        if (this.cnt >= config.WEBSOL_SERVERS.length) { // Aucun serveur n'a retourne une unite cartographique
+                            this.popup = new GeoExt.Popup({
+                                map: this.map,
                                 title: tr ("websol.popup.title.NOK"),
                                 location: pt,
                                 anchorPosition: "top-left",
-                                map: _this.map,
                                 collapsible: false,
                                 closable: true,
                                 unpinnable: false,
                                 buttons: [{
                                     text: tr("OK"),
                                     handler: function() {
-                                        _this.popup.close();
-                                    }
+                                        this.popup.close();
+                                    },
+                                    scope: this
                                 }],
-                                html: _this.msg
+                                html: this.msg,
+                                scope: this
                             });
                             mask && mask.hide();
-                            _this.popup.show();
+                            this.popup.show();
                         }
                     }else{
                         var json = Ext.util.JSON.decode(response.responseText) ;
                         var geojsonFormat = new OpenLayers.Format.GeoJSON();
                         var html = json.properties["html"];
-                        _this.vectorLayer.addFeatures(geojsonFormat.read(json));
-                            console.log ("new popup x="+pt.x+" y="+pt.y) ;
-                            _this.popup = new GeoExt.Popup({
-                                title: tr ("websol.popup.title.OK")+json.id,
-                                location: pt,
-                                width: 600,
-                                height: 400,
-                                anchorPosition: "top-left",
-                                map: _this.map,
-                                autoScroll: true,
-                                closeAction: "hide",
-                                collapsible: false,
-                                closable: true,
-                                unpinnable: false,
-                                buttons: [{
-                                    text: tr("OK"),
-                                    handler: function() {
-                                        _this.popup.close();
-                                        _this.vectorLayer.destroyFeatures() ;
-                                    }
-                                }],
-                                listeners: {
-                                    "hide": function() {
-                                        _this.vectorLayer.destroyFeatures() ;
-                                    },
-                                    scope: this
+                        this.vectorLayer.addFeatures(geojsonFormat.read(json));
+                        this.popup = new GeoExt.Popup({
+                            map: this.map,
+                            title: tr ("websol.popup.title.OK")+json.id,
+                            location: pt,
+                            width: 600,
+                            height: 400,
+                            anchorPosition: "top-left",
+                            autoScroll: true,
+                            closeAction: "hide",
+                             collapsible: false,
+                            closable: true,
+                            unpinnable: false,
+                            buttons: [{
+                                text: tr("OK"),
+                                handler: function() {
+                                    this.popup.close();
+                                    this.vectorLayer.destroyFeatures() ;
                                 },
-                                html: html,
                                 scope: this
-                            });
+                            }],
+                            listeners: {
+                                "hide": function() {
+                                    this.vectorLayer.destroyFeatures() ;
+                                },
+                                scope: this
+                            },
+                            html: html,
+                            scope: this
+                        });
                         mask && mask.hide();
-                        _this.popup.show();
+                        this.popup.show();
                     }
-                }
+                },
+                scope: this
             });
         }
     },
@@ -235,9 +239,8 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
      *
      */
     defControlGetUCS: function () {
-        _this = this ;
+        addon = this ;
         OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
-            displayClass: 'detailUCS',
             defaultHandlerOptions: {
                 'single': true,
                 'double': false,
@@ -245,19 +248,20 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
                 'stopSingle': false,
                 'stopDouble': false
             },
-            trigger: function (pt) {
-                console.log ("clicken sie inside") ;
-                _this.getUCS(pt);
-            },
             initialize: function () {
                 this.handlerOptions = OpenLayers.Util.extend({}, this.defaultHandlerOptions);
-                OpenLayers.Control.prototype.initialize.apply(
-                this, arguments);
+                OpenLayers.Control.prototype.initialize.apply(this, arguments);
                 this.handler = new OpenLayers.Handler.Point(
                 this, {
                     'done': this.trigger,
-                });
-            }
+                }, 
+                this.handlerOptions
+                );
+            },
+            trigger: function (pt) {
+                addon.getUCS(pt);
+            },
+            scope: this
         });
     },
 
@@ -266,7 +270,6 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
      * Callback on checkbox state changed
      */     
     onCheckchange: function(item, checked) {
-        console.log ("onCheckchange:") ;
         if (checked) {
             GEOR.helper.msg("WebSol",
                 OpenLayers.i18n("websol.helper.msg")) ;
@@ -276,14 +279,20 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
             if (this.vectorLayer) {
                 this.vectorLayer.destroyFeatures() ;
             }
-            this.popup.hide();
+            if (this.popup) {
+                this.popup.hide();
+            }
         }
     },
 
     destroy: function() {        
-       this.map = null;
+       this.clickUCS.deactivate();
+       this.clickUCS.destroy();
+       this.popup.hide();
        this.popup = null;
+       this.map.removeLayer (this.vectorLayer) ;
        this.vectorLayer = null;
+       this.map = null;
        GEOR.Addons.Base.prototype.destroy.call(this);
     }
 });

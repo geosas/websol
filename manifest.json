@@ -2,9 +2,9 @@
     "js": [
         "../../../lib/externals/openlayers/lib/OpenLayers/Format/OWSCommon/v1_1_0.js",
         "js/lang.js",
-        "js/websol.js"
+        "js/main.js"
     ],
-    "css": ["css/sol.css"],
+    "css": ["css/main.css"],
     "default_options": {
         "WEBSOL_SERVERS": [
             {"name": "Bretagne", "url": "http://websoltest.agrocampus-ouest.fr/webservice/getUCS", "layers":"25035,25022,25029,25056"},
