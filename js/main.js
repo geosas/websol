@@ -67,9 +67,9 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
         }) ;
         map = this.map;
         config = this.options;
-        console.log ("Liste des serveurs WEBSOL utilises : ") ; // debug infos
+//        console.log ("Liste des serveurs WEBSOL utilises : ") ; // debug infos
         for (i=0 ; i < config.WEBSOL_SERVERS.length ; i++)	{
-             console.log ("name="+config.WEBSOL_SERVERS[i].name+" / url="+config.WEBSOL_SERVERS[i].url+" / layers="+config.WEBSOL_SERVERS[i].layers) ;
+//            console.log ("name="+config.WEBSOL_SERVERS[i].name+" / url="+config.WEBSOL_SERVERS[i].url+" / layers="+config.WEBSOL_SERVERS[i].layers) ;
         } 
         this.defControlGetUCS();
         this.clickUCS = new OpenLayers.Control.Click();
@@ -161,7 +161,6 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
         for (i=0 ; i < config.WEBSOL_SERVERS.length ; i++)	{
             var url = config.WEBSOL_SERVERS[i].url+"?lon="+pt.x+"&lat="+pt.y+"&format="+config.format+"&layers="+config.WEBSOL_SERVERS[i].layers+"&sld="+config.sld ;
             this.msg += "- " + config.WEBSOL_SERVERS[i].name + "<br>";
-            console.log ("url="+url) ;
             Ext.Ajax.request({
                 url: url,
                 method: 'GET',
