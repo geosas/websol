@@ -7,8 +7,12 @@ author:@hsquividant.
 
 Compatibility: geOrchestra >= 14.12
 
+Config
+
+------
 Example addon config to include in your GEOR_custom.js file:
 
+```json
     {
         "id": "websol", // unique & stable string identifier for this addon instance
         "name": "Websol",
@@ -33,10 +37,12 @@ Example addon config to include in your GEOR_custom.js file:
             ]
         }
     }
+```
 
 
 another example of addon config to query only Alsace soil database :
 
+```json
     {
         "id": "websol", // unique & stable string identifier for this addon instance
         "name": "Websol",
@@ -56,4 +62,20 @@ another example of addon config to query only Alsace soil database :
             ]
         }
     }
+```
 
+Proxy
+-----
+
+Due to the content type returned by websol servers, you have to add a new entry in proxy config :
+ * **geOrchestra Security-proxy** : in .../georchestra/security-proxy/src/main/filtered-resources/WEB-INF/proxy-servlet.xml insert line 35 :
+```
+<value>text/html</value> 
+```
+or
+ * **mapfishapp embededed proxy** : in .../georchestra/mapfishapp/src/main/java/org/georchestra/mapfishapp/ws/OGCProxy.java  insert line 59 :
+
+```
+"text/html", 
+```
+   
