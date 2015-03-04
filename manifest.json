@@ -12,6 +12,7 @@
             {"name": "Rhone-Alpes", "url": "http://rhone-alpes.websol.fr/webservice/getUCS", "layers": "69250,42250,26250,7250"},
             {"name": "Alsace", "url": "http://alsace.websol.fr/webservice/getUCS", "layers": "31372,30146"}
         ],
+        "epsg": "EPSG:2154",
         "group": "Pedologie",
         "format": "geojson",
         "sld": false

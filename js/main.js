@@ -30,11 +30,6 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
     vectorLayer: null,
 
     /**
-     * Property: config
-     *{Object} Hash of options */	
-    config: null,
-
-    /**
      * Property: mask
      * {Ext.LoadMask} the catalogue's keywords panel mask
      */
@@ -66,10 +61,9 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
             msg: tr("Loading...")
         }) ;
         map = this.map;
-        config = this.options;
 //        console.log ("Liste des serveurs WEBSOL utilises : ") ; // debug infos
-        for (i=0 ; i < config.WEBSOL_SERVERS.length ; i++)	{
-//            console.log ("name="+config.WEBSOL_SERVERS[i].name+" / url="+config.WEBSOL_SERVERS[i].url+" / layers="+config.WEBSOL_SERVERS[i].layers) ;
+        for (i=0 ; i < this.options.WEBSOL_SERVERS.length ; i++)	{
+//            console.log ("name="+this.options.WEBSOL_SERVERS[i].name+" / url="+this.options.WEBSOL_SERVERS[i].url+" / layers="+this.options.WEBSOL_SERVERS[i].layers) ;
         } 
         this.defControlGetUCS();
         this.clickUCS = new OpenLayers.Control.Click();
@@ -150,6 +144,7 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
      *
      */
     getUCS: function(pt) {
+        var ptProj = pt ;
         this.cnt = 0 ;
         this.msg = tr ("websol.popup.body.NOK") ;
         GEOR.waiter.show();
@@ -158,16 +153,18 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
         if (this.vectorLayer) {
             this.vectorLayer.destroyFeatures() ;
         }
-        for (i=0 ; i < config.WEBSOL_SERVERS.length ; i++)	{
-            var url = config.WEBSOL_SERVERS[i].url+"?lon="+pt.x+"&lat="+pt.y+"&format="+config.format+"&layers="+config.WEBSOL_SERVERS[i].layers+"&sld="+config.sld ;
-            this.msg += "- " + config.WEBSOL_SERVERS[i].name + "<br>";
+        ptProj = new OpenLayers.LonLat(pt.x,pt.y).transform( map.getProjection(), this.options.epsg);
+        console.log ("Pt map("+map.getProjection()+"): "+pt.x+" "+pt.y+" --> Pt websol("+this.options.epsg+"): "+ptProj.lon+" "+ptProj.lat) ;
+        for (i=0 ; i < this.options.WEBSOL_SERVERS.length ; i++)	{
+            var url = this.options.WEBSOL_SERVERS[i].url+"?lon="+ptProj.lon+"&lat="+ptProj.lat+"&format="+this.options.format+"&layers="+this.options.WEBSOL_SERVERS[i].layers+"&sld="+this.options.sld ;
+            this.msg += "- " + this.options.WEBSOL_SERVERS[i].name + "<br>";
             Ext.Ajax.request({
                 url: url,
                 method: 'GET',
                 success: function(response) {
                     if (response.responseText.indexOf("no_uc") == -1) {
                         this.cnt++ ;
-                        if (this.cnt >= config.WEBSOL_SERVERS.length) { // Aucun serveur n'a retourne une unite cartographique
+                        if (this.cnt >= this.options.WEBSOL_SERVERS.length) { // Aucun serveur n'a retourne une unite cartographique
                             this.popup = new GeoExt.Popup({
                                 map: this.map,
                                 title: tr ("websol.popup.title.NOK"),
@@ -191,7 +188,10 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
                         }
                     }else{
                         var json = Ext.util.JSON.decode(response.responseText) ;
-                        var geojsonFormat = new OpenLayers.Format.GeoJSON();
+                        var geojsonFormat = new OpenLayers.Format.GeoJSON({
+                            'internalProjection': new OpenLayers.Projection(this.map.getProjection()),
+                            'externalProjection': new OpenLayers.Projection(this.options.epsg)
+                        }); 
                         var html = json.properties["html"];
                         this.vectorLayer.addFeatures(geojsonFormat.read(json));
                         this.popup = new GeoExt.Popup({
