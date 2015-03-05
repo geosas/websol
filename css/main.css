@@ -47,4 +47,6 @@
 
 .websol-icon {
     background-image: url(../img/websol-icon.png) !important;    
+    height:20px !important;
+    width:20px !important;
 }
