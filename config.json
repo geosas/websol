@@ -1,0 +1,16 @@
+[{
+        "id": "websol", // unique & stable string identifier for this addon instance
+        "name": "Websol",
+        "enabled": true,
+        "title": {
+            "en": "Soil Cartographic Units",
+            "es": "Carta Del Solo",
+            "fr": "Unites Cartographique de Sol"
+        },
+        "preloaded": "true",
+        "description": {
+            "en": "A tool which allow to query Soil database",
+            "es": "Un outil qui permet d'interroger le referentiel pedologique",
+            "fr": "Un outil qui permet d'interroger le referentiel pedologique"
+        }
+}]
