@@ -287,8 +287,10 @@ GEOR.Addons.Websol = Ext.extend(GEOR.Addons.Base, {
     destroy: function() {        
        this.clickUCS.deactivate();
        this.clickUCS.destroy();
-       this.popup.hide();
-       this.popup = null;
+       if (this.popup != null) {
+           this.popup.hide();
+           this.popup = null;
+       }
        this.map.removeLayer (this.vectorLayer) ;
        this.vectorLayer = null;
        this.map = null;
